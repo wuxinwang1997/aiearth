@@ -20,7 +20,7 @@ def make_optimizer(cfg, model):
         if "bn" in key:
             weight_decay = cfg.SOLVER.WEIGHT_DECAY_BN
         params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
-    if cfg.SOLVER.OPTIMIZER_NAME is 'SGD':
+    if cfg.SOLVER.OPTIMIZER_NAME == 'SGD':
         optimizer = getattr(torch.optim, cfg.SOLVER.OPTIMIZER_NAME)(params, momentum=cfg.SOLVER.MOMENTUM)
     else:
         optimizer = getattr(torch.optim, cfg.SOLVER.OPTIMIZER_NAME)(params)
