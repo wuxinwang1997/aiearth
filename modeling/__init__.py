@@ -4,7 +4,9 @@
 @contact: wuxin.wang@whu.edu.cn
 """
 
-from .simplecnn import SimpleCNN
+from .multiresnet import MultiResnet
+
+
 def build_model(cfg):
-    model = SimpleCNN(cfg)
+    model = MultiResnet(cfg)
     return model

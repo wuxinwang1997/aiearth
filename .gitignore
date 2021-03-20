@@ -128,5 +128,15 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-.idea/
-.usr_data/model_data/
+# User data
+usr_data/model_data/
+slurm*
+
+# MacOS
+.DS_Store
+
+# Idea
+.idea/workspace.xml
+
+# compiled bytecode of Python source files
+.pyc

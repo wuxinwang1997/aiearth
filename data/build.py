@@ -8,44 +8,116 @@ import os
 import socket
 
 import netCDF4 as nc4
+from scipy import interpolate
 import numpy as np
+import pandas as pd
 import torch
 import torch.utils.data as data
 from .datasets.dataset import EarthDataset, TestDataset
 from .transforms.build import build_transforms
-import torch.multiprocessing
-torch.multiprocessing.set_sharing_strategy('file_system')
+import matplotlib.pyplot as plt
+from .collate_batch import collate_batch
+
+
+def fill_nan(cmip_data):
+    sample_size = cmip_data['sst'].shape[0]
+    train_data = np.zeros((4, sample_size, 12, 24, 72))
+    cmip6 = np.zeros((4, 15, 151, 12, 24, 72))
+    cmip5 = np.zeros((4, 17, 140, 12, 24, 72))
+
+    print('decompose')
+    for i, var in enumerate(['sst', 't300', 'ua', 'va']):
+        for j in range(15):
+            for k in range(151):
+                cmip6[i, j, k, :, :] = cmip_data[var][j * 151 + k, 0:12, :, :]
+        for j in range(17):
+            for k in range(140):
+                cmip5[i, j, k, :, :] = cmip_data[var][j * 140 + k + 15 * 151, 0:12, :, :]
+
+    print('fill nan')
+    for data in [cmip6, cmip5]:
+        for i in range(4):
+            nan_idx = np.argwhere(np.isnan(data[i]))
+            if not nan_idx.shape[0]:
+                continue
+            nan_df = pd.DataFrame(nan_idx)
+            yx_unique_nan = nan_df.groupby([3, 4]).size().reset_index(name='Freq')
+            for idx, row in yx_unique_nan.iterrows():
+                y = row[3]
+                x = row[4]
+                for year in range(151):
+                    for month in range(12):
+                        pt = data[i, :, year, month, y, x]
+                        pt[np.isnan(pt)] = np.nanmean(pt)
+    print('reshape')
+    for i in range(4):
+        year = 0
+        while year < 15 * 151:
+            train_data[i, year, :, :, :] = cmip6[i, int(year / 151), year % 151, :, :, :]
+            year += 1
+        while year < 15 * 151 + 17 * 140:
+            train_data[i, year, :, :, :] = cmip5[i, int((year - 151 * 15) / 140), year % 140, :, :, :]
+            year += 1
+
+    return train_data
+
+
+def upsample(a, ratio):
+    height = a.shape[0]
+    width = a.shape[1]
+    y = np.array(range(height))
+    x = np.array(range(width))
+    f = interpolate.interp2d(x, y, a, kind='linear')
+
+    xnew = np.linspace(0, width, width * ratio)
+    ynew = np.linspace(0, height, height * ratio)
+    znew = f(xnew, ynew)
+
+    return znew
+
 
 def prepare_cmip_data(cfg):
-    root_dir = cfg.DATASETS.ROOT_DIR
+    if socket.gethostname() == 'lujingzedeMacBook-Pro.local':
+        root_dir = '/Users/lujingze/Programming/ai-earth/data/enso_round1_train_20210201/'
+    else:
+        root_dir = cfg.DATASETS.ROOT_DIR
+    ratio = cfg.DATASETS.UP_RATIO
     cmip_data = nc4.Dataset(root_dir + 'CMIP_train.nc').variables
+    # shape: (4, years, 12, 24, 72)
+    cmip_data = fill_nan(cmip_data)
     cmip_label = nc4.Dataset(root_dir + 'CMIP_label.nc').variables
 
-    cmip = dict()
-    for var in ['sst']:#, 't300']:#, 'ua', 'va']:
-        tmp = np.array(cmip_data[var][:, 0:12, :, :])
+    dict_cmip = dict()
+    for i, var in enumerate(['sst', 't300', 'ua', 'va']):
+        tmp = np.array(cmip_data[i][:, 0:12, :, :])
         tmp = np.nan_to_num(tmp)
         tmp = torch.tensor(tmp)
         tmp = torch.flatten(tmp, start_dim=0, end_dim=1)
-        cmip[var] = tmp.numpy()
+        # months = tmp.shape[0]
+        # up_tmp = np.zeros((months, 24 * ratio, 72 * ratio))
+        # for j in range(months):
+        #     up_tmp[j] = upsample(tmp[j], ratio)
+        # dict_cmip[var] = up_tmp
+        dict_cmip[var] = tmp
+
     tmp = np.array(cmip_label['nino'][:, 12:24])
     last_year_nino = np.array(cmip_label['nino'][-1, -12:].reshape((1, 12)))
     tmp = np.concatenate((tmp, last_year_nino), axis=0)
-    cmip['label'] = tmp.flatten()
+    dict_cmip['label'] = tmp.flatten()
 
-    dict_cmip = dict()
-    for var in ['sst', 'label']:#'ua', 'va', 'label']:
-        dict_cmip[var] = cmip[var]
     return dict_cmip
 
 
 def prepare_soda_data(cfg):
-    root_dir = cfg.DATASETS.ROOT_DIR
+    if socket.gethostname() == 'lujingzedeMacBook-Pro.local':
+        root_dir = '/Users/lujingze/Programming/ai-earth/data/enso_round1_train_20210201/'
+    else:
+        root_dir = cfg.DATASETS.ROOT_DIR
     soda_data = nc4.Dataset(root_dir + 'SODA_train.nc').variables
     soda_label = nc4.Dataset(root_dir + 'SODA_label.nc').variables
 
     soda = dict()
-    for var in ['sst']:#, 'ua', 'va']:
+    for var in ['sst', 't300', 'ua', 'va']:
         tmp = np.array(soda_data[var][:, 0:12, :, :])
         tmp = np.nan_to_num(tmp)
         tmp = torch.tensor(tmp)
@@ -57,57 +129,54 @@ def prepare_soda_data(cfg):
     tmp = np.concatenate((tmp, last_year_nino), axis=0)
     soda['label'] = tmp.flatten()
 
+    # soda['label'] = np.array(soda_label['nino'][:, 12:36])
+    # soda['label'] = np.array(soda['label']).flatten()
+
     dict_soda = dict()
-    for var in ['sst', 'label']:#'ua', 'va', 'label']:
+    for var in ['sst', 't300', 'ua', 'va', 'label']:
         dict_soda[var] = soda[var]
+
     return dict_soda
+
 
 def prepare_test_data(cfg):
     test_path = cfg.DATASETS.TEST_DIR
-    files = os.listdir(test_path)
+    files = [x for x in os.listdir(test_path) if x.endswith('.npy')]
     test_sst = np.zeros((len(files), 12, 24, 72))
-    #test_t300 = np.zeros((len(files), 12, 24, 72))
-    #test_ua = np.zeros((len(files), 12, 24, 72))
-    #test_va = np.zeros((len(files), 12, 24, 72))
+    test_t300 = np.zeros((len(files), 12, 24, 72))
+    test_ua = np.zeros((len(files), 12, 24, 72))
+    test_va = np.zeros((len(files), 12, 24, 72))
     for i in range(len(files)):
         file = np.load(test_path + files[i])
         sst, t300, ua, va = np.split(file, 4, axis=3)
         test_sst[i, :, :, :] = sst.transpose(3, 0, 1, 2)
-        #test_t300[i, :, :, :] = t300.transpose(3, 0, 1, 2)
-        #test_ua[i, :, :, :] = ua.transpose(3, 0, 1, 2)
-        #test_va[i, :, :, :] = va.transpose(3, 0, 1, 2)
+        test_t300[i, :, :, :] = t300.transpose(3, 0, 1, 2)
+        test_ua[i, :, :, :] = ua.transpose(3, 0, 1, 2)
+        test_va[i, :, :, :] = va.transpose(3, 0, 1, 2)
 
     dict_test = {
         'sst': test_sst,
-        #'t300': test_t300,
-     #   'ua': test_ua,
-     #   'va': test_va,
+        't300': test_t300,
+        'ua': test_ua,
+        'va': test_va,
         'name': np.array(files)
     }
+
     return dict_test
 
 
 def build_dataset(cfg):
     dict_cmip, dict_soda = prepare_cmip_data(cfg), prepare_soda_data(cfg)
-    dataset_cmip = EarthDataset(
+    train_dataset = EarthDataset(
         data_dict=dict_cmip,
         transforms=build_transforms(cfg, is_train=True),
     )
 
-    dataset_soda = EarthDataset(
+    val_dataset = EarthDataset(
         data_dict=dict_soda,
         transforms=build_transforms(cfg, is_train=False),
     )
-    if cfg.DATASETS.SODA:
-        len_val = int(dataset_soda.len*0.2)
-        train_dataset, val_dataset = data.random_split(dataset_soda,
-                                                       lengths=[dataset_soda.len-len_val, len_val],
-                                                       generator=torch.Generator().manual_seed(cfg.SEED))
-    else:
-        len_val = int(dataset_cmip.len * 0.2)
-        train_dataset, val_dataset = data.random_split(dataset_cmip,
-                                                       lengths=[dataset_cmip.len - len_val, len_val],
-                                                       generator=torch.Generator().manual_seed(cfg.SEED))
+
     return train_dataset, val_dataset
 
 
@@ -136,7 +205,7 @@ def make_data_loader(cfg, is_train=True):
         drop_last=False,
         num_workers=num_workers,
         pin_memory=False,
-        shuffle=True)
+        shuffle=False)
 
     val_loader = data.DataLoader(
         val_dataset,

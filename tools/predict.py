@@ -16,7 +16,7 @@ from modeling import build_model
 import random
 import torch
 import numpy as np
-from utils.modelema import ModelEMA
+from utils.logger import setup_logger
 
 def seed_everything(seed):
     random.seed(seed)
@@ -27,17 +27,12 @@ def seed_everything(seed):
 def predict(cfg):
     seed_everything(cfg.SEED)
     model = build_model(cfg)
-    ema = ModelEMA(model)
-    if torch.cuda.is_available():
-        device = 'cuda'
-        ema.ema.load_state_dict(torch.load(cfg.TEST.WEIGHT)['model_state_dict'])
-    else:
-        device = 'cpu'
-        ema.ema.load_state_dict(torch.load(cfg.TEST.WEIGHT, map_location=device)['model_state_dict'])
+    model.load_state_dict(torch.load(cfg.TEST.WEIGHT, map_location=cfg.MODEL.DEVICE)['model_state_dict'])
+    device = cfg.MODEL.DEVICE
 
     test_loader = make_test_data_loader(cfg)
 
-    predicter = Predicter(model=ema.ema, device=device, cfg=cfg, test_loader=test_loader)
+    predicter = Predicter(model=model, device=device, cfg=cfg, test_loader=test_loader)
     predicter.predict()
 
 def main():

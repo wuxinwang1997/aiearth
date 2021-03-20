@@ -18,7 +18,7 @@ import random
 import torch
 import numpy as np
 from utils.logger import setup_logger
-from utils.modelema import ModelEMA
+
 
 def seed_everything(seed):
     random.seed(seed)
@@ -29,16 +29,17 @@ def seed_everything(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-
 def train(cfg, logger):
     seed_everything(cfg.SEED)
     model = build_model(cfg)
-    if cfg.SOLVER.TRAIN_SODA and cfg.MODEL.PRETRAINED_CMIP != '':
-        model.load_state_dict(torch.load(cfg.MODEL.PRETRAINED_CMIP)['ema_state_dict'])
-        for k,v in model.named_parameters():
-             if k.startswith('model.conv1') or k.startswith('model.bn1') or k.startswith('model.layer1'):
-                  v.requires_grad = False
-    ema = ModelEMA(model)
+    if cfg.DATASETS.SODA == True:
+        model.load_state_dict(torch.load(cfg.MODEL.PRETRAINED_CMIP)['model_state_dict'])
+        for k, v in model.named_parameters():
+            if k.startswith('cnn.0.model.0') or k.startswith('cnn.0.model.1') or k.startswith('cnn.0.model.4') \
+                    or k.startswith('cnn.1.model.0') or k.startswith('cnn.1.model.1') or k.startswith('cnn.1.model.4') \
+                    or k.startswith('cnn.2.model.0') or k.startswith('cnn.2.model.1') or k.startswith('cnn.2.model.4') \
+                    or k.startswith('cnn.3.model.0') or k.startswith('cnn.3.model.1') or k.startswith('cnn.3.model.4'):
+                v.requires_grad = False
     if torch.cuda.is_available():
         device = 'cuda'
     else:
@@ -48,7 +49,7 @@ def train(cfg, logger):
 
     train_loader, val_loader = make_data_loader(cfg, is_train=True)
 
-    fitter = Fitter(model=model, ema=ema, device=device, cfg=cfg, train_loader=train_loader, val_loader=val_loader, logger=logger)
+    fitter = Fitter(model=model, device=device, cfg=cfg, train_loader=train_loader, val_loader=val_loader, logger=logger)
     if check:
         curPath = os.path.abspath(os.path.dirname(__file__))
         fitter.load(f'{cfg.OUTPUT_DIR}/last-checkpoint.bin')

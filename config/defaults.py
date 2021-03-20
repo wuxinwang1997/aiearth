@@ -30,11 +30,8 @@ _C.VERBOSE = True
 _C.MODEL = CN()
 _C.MODEL.DEVICE = "cuda"
 _C.MODEL.NUM_CLASSES = 2
-_C.MODEL.PRETRAINED_CMIP  = "./usr_data/model_data/resnet18-lr1e4-sst-epoch30-cmip/best-model.bin"
-
-_C.MODEL.BACKBONE = CN()
-_C.MODEL.BACKBONE.PRETRAIN = False
-_C.MODEL.BACKBONE.PRETRAIN_PATH = '/home/wangxiang/dat01/WWX/aiearth/pretrained/resnet18.pth'
+_C.MODEL.PRETRAINED_IMAGENET = '/home/wangxiang/dat01/WWX/aiearth/pretrained/resnet18.pth'
+_C.MODEL.PRETRAINED_CMIP = "../usr_data/model_data/resnet18_lstm-epoch30-cmip/best-model.bin"
 # -----------------------------------------------------------------------------
 # INPUT
 # -----------------------------------------------------------------------------
@@ -45,17 +42,16 @@ _C.INPUT = CN()
 # -----------------------------------------------------------------------------
 _C.DATASETS = CN()
 # Root dir of dataset
-_C.DATASETS.SODA = False
 _C.DATASETS.ROOT_DIR = "/home/wangxiang/dat01/WWX/aiearth/data/enso_round1_train_20210201/"
 _C.DATASETS.TEST_DIR = "../tcdata/enso_round1_test_20210201/"
 # Fold to validate
-
+_C.DATASETS.SODA = False
 _C.DATASETS.X_DIM = 72
 _C.DATASETS.Y_DIM = 24
 _C.DATASETS.Z_DIM = 48
 
 # Upscale ratio
-_C.DATASETS.UP_RATIO = 1
+_C.DATASETS.UP_RATIO = 2
 
 # # List of the dataset names for training, as present in paths_catalog.py
 # _C.DATASETS.TRAIN = ()
@@ -67,7 +63,7 @@ _C.DATASETS.UP_RATIO = 1
 # -----------------------------------------------------------------------------
 _C.DATALOADER = CN()
 # Number of data loading threads
-_C.DATALOADER.NUM_WORKERS = 0
+_C.DATALOADER.NUM_WORKERS = 2
 
 # ---------------------------------------------------------------------------- #
 # Solver
@@ -75,12 +71,12 @@ _C.DATALOADER.NUM_WORKERS = 0
 _C.SOLVER = CN()
 _C.SOLVER.OPTIMIZER_NAME = "Adam"
 _C.SOLVER.SCHEDULER_NAME = "CosineAnnealingWarmRestarts"
-_C.SOLVER.COS_EPOCH = 45
+_C.SOLVER.COS_EPOCH = 25
 _C.SOLVER.T_MUL = 1
 
-_C.SOLVER.MAX_EPOCHS = 50
+_C.SOLVER.MAX_EPOCHS = 30
 
-_C.SOLVER.BASE_LR = 1e-4
+_C.SOLVER.BASE_LR = 3e-4
 _C.SOLVER.BIAS_LR_FACTOR = 1
 
 _C.SOLVER.MOMENTUM = 0.9
@@ -93,7 +89,6 @@ _C.SOLVER.WARMUP_EPOCHS = 5
 
 _C.SOLVER.EARLY_STOP_PATIENCE = 40
 
-_C.SOLVER.TRAIN_SODA = False
 _C.SOLVER.TRAIN_CHECKPOINT = False
 
 # Number of images per batch
@@ -105,11 +100,11 @@ _C.SOLVER.IMS_PER_BATCH = 64
 # see 2 images per batch
 _C.TEST = CN()
 _C.TEST.IMS_PER_BATCH = 64
-_C.TEST.WEIGHT = "../usr_data/model_data/resnet18_dropout0.5-lr1e4-sst-epoch30-soda/best-model.bin"
+_C.TEST.WEIGHT = "../usr_data/model_data/resnet18_lstm-epoch30-soda/best-model.bin"
 
 # ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #
-_C.OUTPUT_DIR = "./usr_data/model_data/resnet18_lstm-lr1e4-epoch30-soda/"
+_C.OUTPUT_DIR = "./usr_data/model_data/resnet18_lstm-epoch30-cmip/"
 _C.RESULT_DIR = "../result/"
 _C.RESULT_PATH = "../result.zip"
