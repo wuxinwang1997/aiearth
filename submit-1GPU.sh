@@ -9,5 +9,5 @@
 module load anaconda/3.7
 module load nvidia/cuda/10.1
 source activate aiearth
-python tools/train_net.py
-python tools/train_net.py DATASETS.SODA '("False")' SOLVER.BASE_LR '(1e-4)' OUTPUT_DIR '("./usr_data/model_data/resnet18_lstm-epoch30-soda/")'
+python tools/train_net.py SOLVER.MAX_EPOCHS '(1)'
+python tools/train_net.py DATASETS.SODA '(False)' SOLVER.BASE_LR '(1e-4)' OUTPUT_DIR '("./usr_data/model_data/resnet18_lstm-epoch30-soda/")' SOLVER.MAX_EPOCHS '(1)'

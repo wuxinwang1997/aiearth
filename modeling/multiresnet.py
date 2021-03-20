@@ -23,11 +23,6 @@ class MultiResnet(nn.Module):
     def forward(self, x):
         sst, t300, ua, va = x
 
-        sst = sample(sst)
-        t300 = sample(t300)
-        ua = sample(ua)
-        va = sample(va)
-
         sst = self.cnn[0](sst)
         t300 = self.cnn[1](t300)
         ua = self.cnn[2](ua)
