@@ -136,6 +136,7 @@ def make_data_loader(cfg, is_train=True):
         batch_size=batch_size,
         drop_last=False,
         num_workers=num_workers,
+        worker_init_fn= np.random.seed(cfg.SEED),
         pin_memory=False,
         shuffle=True)
 
@@ -143,6 +144,7 @@ def make_data_loader(cfg, is_train=True):
         val_dataset,
         batch_size=batch_size,
         num_workers=num_workers,
+        worker_init_fn=np.random.seed(cfg.SEED),
         drop_last=False,
         shuffle=False,
         pin_memory=False,
@@ -162,6 +164,7 @@ def make_test_data_loader(cfg):
         batch_size=batch_size,
         drop_last=False,
         num_workers=num_workers,
+        worker_init_fn=np.random.seed(cfg.SEED),
         pin_memory=False,
         shuffle=False)
 

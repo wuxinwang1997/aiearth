@@ -31,7 +31,7 @@ _C.MODEL = CN()
 _C.MODEL.DEVICE = "cuda"
 _C.MODEL.NUM_CLASSES = 2
 _C.MODEL.PRETRAINED_IMAGENET = '/home/wangxiang/dat01/WWX/aiearth/pretrained/resnet18.pth'
-_C.MODEL.PRETRAINED_CMIP = "../usr_data/model_data/resnet18_lstm-epoch30-cmip/best-model.bin"
+_C.MODEL.PRETRAINED_CMIP = "./usr_data/model_data/resnet18_lstm-epoch30-cmip/best-model.bin"
 # -----------------------------------------------------------------------------
 # INPUT
 # -----------------------------------------------------------------------------
@@ -76,7 +76,7 @@ _C.SOLVER.T_MUL = 1
 
 _C.SOLVER.MAX_EPOCHS = 30
 
-_C.SOLVER.BASE_LR = 3e-4
+_C.SOLVER.BASE_LR = 1e-4
 _C.SOLVER.BIAS_LR_FACTOR = 1
 
 _C.SOLVER.MOMENTUM = 0.9
