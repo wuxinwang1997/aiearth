@@ -28,7 +28,7 @@ class SimpleCNN(nn.Module):
             resnet.layer1,
             resnet.layer2,
             resnet.layer3,
-            resnet.layer4
+            # resnet.layer4
         )
 
     def forward(self, x):

@@ -15,10 +15,10 @@ class MultiResnet(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.cnn = nn.ModuleList([SimpleCNN(cfg) for i in range(4)])
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 128))
-        self.lstm = nn.LSTM(input_size=3 * 4, hidden_size=64, num_layers=2, batch_first=True, bidirectional=True)
-        self.batch_norm = nn.BatchNorm1d(512, affine=False)
-        self.linear = nn.Linear(128, 24)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 64))
+        self.batch_norm = nn.BatchNorm1d(256, affine=False)
+        self.lstm = nn.LSTM(input_size=10 * 4, hidden_size=32, num_layers=2, batch_first=True, bidirectional=True)
+        self.linear = nn.Linear(64, 24)
 
     def forward(self, x):
         sst, t300, ua, va = x

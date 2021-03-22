@@ -30,7 +30,7 @@ _C.VERBOSE = True
 _C.MODEL = CN()
 _C.MODEL.DEVICE = "cuda"
 _C.MODEL.NUM_CLASSES = 2
-_C.MODEL.PRETRAINED_IMAGENET = '/home/wangxiang/dat01/WWX/aiearth/pretrained/resnet18.pth'
+_C.MODEL.PRETRAINED_IMAGENET = '/Users/lujingze/Programming/ai-earth/pretrained/resnet18-5c106cde.pth'#'/home/wangxiang/dat01/WWX/aiearth/pretrained/resnet18.pth'
 _C.MODEL.PRETRAINED_CMIP = "./usr_data/model_data/resnet18_lstm-epoch30-cmip/best-model.bin"
 # -----------------------------------------------------------------------------
 # INPUT
